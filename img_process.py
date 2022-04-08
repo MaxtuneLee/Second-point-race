@@ -7,6 +7,11 @@ center_width = 320
 center_height = 240
 angle_flag = 0
 circle_flag = 0
+font = cv2.FONT_HERSHEY_SIMPLEX
+lower_red = np.array([0, 150, 150])
+higher_red = np.array([10, 255, 255])
+lower_green = np.array([35, 110, 106])  # 绿色阈值下界
+higher_green = np.array([77, 255, 255])  # 绿色阈值上界
 
 cap = cv2.VideoCapture(0)
 
@@ -76,11 +81,43 @@ def line_detection(frame):
                     cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
 
+def recognizeColor(frame):
+    img_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    mask_red = cv2.inRange(img_hsv, lower_red, higher_red)  # 可以认为是过滤出红色部分，获得红色的掩膜,去掉背景
+    mask_red = cv2.medianBlur(mask_red, 7)  # 中值滤波(把数字图像中的一点的值用该点的邻域各点的中值代替，让 周围像素值接近真实值，从而消除孤立的噪声点)
+    mask_green = cv2.inRange(img_hsv, lower_green, higher_green)  # 获得绿色部分掩膜
+    mask_green = cv2.medianBlur(mask_green, 7)  # 中值滤波
+    # mask_black = cv2.inRange(img_hsv, lower_black, higher_black)  # 获得绿色部分掩膜
+    # mask_black = cv2.medianBlur(mask_black, 7)  # 中值滤波
+
+    # mask = cv2.bitwise_or(mask_red, mask_red)  # 三部分掩膜进行按位或运算
+
+    cnts1, hierarchy1 = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)  # 轮廓检测
+    # cnts2, hierarchy2 = cv2.findContours(mask_black, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    cnts3, hierarchy3 = cv2.findContours(mask_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+
+    for cnt in cnts1:
+        (x, y, w, h) = cv2.boundingRect(cnt)  # 该函数返回矩阵四个点
+        cv2.rectangle(frame, (x, y - 20), (x + w, y + h), (0, 0, 255), 2)  # 将检测到的颜色框起来
+        cv2.putText(frame, 'red', (x, y - 20), font, 0.7, (0, 0, 255), 2)
+
+    # for cnt in cnts2:
+    #     (x, y, w, h) = cv2.boundingRect(cnt)  # 该函数返回矩阵四个点
+    #     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 0), 2)  # 将检测到的颜色框起来
+    #     cv2.putText(frame, 'black', (x, y - 1), font, 0.7, (0, 0, 0), 2)
+
+    for cnt in cnts3:
+        (x, y, w, h) = cv2.boundingRect(cnt)  # 该函数返回矩阵四个点
+        cv2.rectangle(frame, (x, y - 50), (x + w, y + h), (0, 255, 0), 2)  # 将检测到的颜色框起来
+        cv2.putText(frame, 'green', (x, y - 50), font, 0.7, (0, 255, 0), 2)
+
+
 def start():
     while 1:
         ret, frame = cap.read()
         detect_circle(frame)
         line_detection(frame)
+        recognizeColor(frame)
         cv2.imshow("image-lines", frame)
         # line_detect_possible_demo(frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
