@@ -1,21 +1,25 @@
 import threading
 import time
-import img_process as imgp
+import imgprocess as imgp
+import uart
+import main
+import stack
 
+lineDataStack = stack.Stack()
 
-# 定义线程要调用的方法，*add可接收多个以非关键字方式传入的参数
+# 定义线程捏，记得*add可接收多个以非关键字方式传入的参数
 def lineData():
     while True:
-        # 暂停 1 秒后，再执行
-        time.sleep(1)
-        if imgp.lineDataStack.isEmpty() is not True:
-            data = imgp.lineDataStack.pop()
+        # 暂停 0.3 秒后，再执行
+        time.sleep(0.5)
+        if lineDataStack.isEmpty() is not True:
+            data = lineDataStack.pop()
             print("[Notice] stream.py:", data)
+            # uart.sendData(main.ser, data)
 
 
 # def graphData():
 #     while True:
-#         # 暂停 1 秒后，再执行
 #         if imgp.circle_flag == 1:
 #             print("[Notice] stream.py:", "circle found")
 #         if imgp.angle_flag == 1:
