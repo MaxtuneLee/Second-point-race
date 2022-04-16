@@ -19,7 +19,7 @@ higher_red = np.array([10, 255, 255])
 lower_green = np.array([35, 110, 106])  # 绿色阈值下界
 higher_green = np.array([77, 255, 255])  # 绿色阈值上界
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(2)
 
 lineDataStack = stack.Stack()
 lineDataStack.push(0)
@@ -82,8 +82,8 @@ def line_detection(frame):
     dst = cv2.erode(dst, None, iterations=6)  # 腐蚀
     # cv2.imshow("line_detection", dst)
     edges = cv2.Canny(dst, 50, 150, apertureSize=3)  # 边缘检测
-    # cv2.imshow("edges", edges)
-    lines = cv2.HoughLines(edges, 1, np.pi / 180, 100)  # 检测直线
+    cv2.imshow("edges", edges)
+    lines = cv2.HoughLines(edges, 1, np.pi / 180, 120)  # 检测直线
     if lines is not None:
         avg_center_x = 0
         avg_center_y = 0
@@ -119,8 +119,10 @@ def line_detection(frame):
                 rho2 = avg_center_x / a
                 rho3 = avg_center_y / b
                 rho_avg = (rho2 + rho3) / 2
+                stream.distDataStack.push(rho_avg*0.1)
+                stream.angleDataStack.push(theta)
                 # uart.send_angle_message(theta)
-                # uart.send_distance_message(rho_avg)
+                # uart.send_distance_message(rho_avg*0.1)
 
                 # # 按照acfly的循线串口协议处理发送数据
                 # if theta > 90:

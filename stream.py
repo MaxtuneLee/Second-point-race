@@ -6,15 +6,23 @@ import main
 import stack
 
 lineDataStack = stack.Stack()
+distDataStack = stack.Stack()
+angleDataStack = stack.Stack()
+
 
 # 定义线程捏，记得*add可接收多个以非关键字方式传入的参数
 def lineData():
     while True:
-        # 暂停 0.3 秒后，再执行
+        # 暂停 0.5 秒后，再执行
         time.sleep(0.5)
-        if lineDataStack.isEmpty() is not True:
-            data = lineDataStack.pop()
-            print("[Notice] stream.py:", data)
+        if distDataStack.isEmpty() is not True or angleDataStack.isEmpty() is not True:
+            print("lineDataStack is not empty")
+            # data = lineDataStack.pop()
+            dist = distDataStack.pop()
+            angle = angleDataStack.pop()
+            uart.send_distance_message(dist)
+            uart.send_angle_message(angle)
+            # print("[Notice] stream.py:", data)
             # uart.sendData(main.ser, data)
 
 
