@@ -15,9 +15,12 @@ def OpenPort(bps, timeout):
             ser.write(
                 ",---.    ,---.   ____     _____     __ ,---------.   ___    _ ,---.   .--.    .-''-.   \n|    \  /    | .'  __ `.  \   _\   /  /\          \.'   |  | ||    \  |  |  .'_ _   \  \n|  ,  \/  ,  |/   '  \  \ .-./ ). /  '  `--.  ,---'|   .'  | ||  ,  \ |  | / ( ` )   ' \n|  |\_   /|  ||___|  /  | \ '_ .') .'      |   \   .'  '_  | ||  |\_ \|  |. (_ o _)  | \n|  _( )_/ |  |   _.-`   |(_ (_) _) '       :_ _:   '   ( \.-.||  _( )_\  ||  (_,_)___| \n| (_ o _) |  |.'   _    |  /    \   \      (_I_)   ' (`. _` /|| (_ o _)  |'  \   .---. \n|  (_,_)  |  ||  _( )_  |  `-'`-'    \    (_(=)_)  | (_ (_) _)|  (_,_)\  | \  `-'    / \n|  |      |  |\ (_ o _) / /  /   \    \    (_I_)    \ /  . \ /|  |    |  |  \       /  \n'--'      '--' '.(_,_).' '--'     '----'   '---'     ``-'`-'' '--'    '--'   `'-..-'   \n\n===Raspberry pi is ready===\n[notice] Pi: Type 'exit' to close uart.\n\n".encode(
                     "utf-8"))
+        return ser
     except Exception as e:
         print("===异常===", e)
-    return ser
+
+
+ser = OpenPort(115200, 1)
 
 
 def sendData(ser, data):
@@ -29,11 +32,11 @@ def sendData(ser, data):
 
 def send_angle_message(angle: int):
     data = bytearray([0x42])
-    main.ser().write(data)
-    main.ser().write(angle)
+    ser().write(data)
+    ser().write(angle)
 
 
 def send_distance_message(distance: int):
     data = bytearray([0x44])
-    main.ser().write(data)
-    main.ser().write(distance)
+    ser().write(data)
+    ser().write(distance)

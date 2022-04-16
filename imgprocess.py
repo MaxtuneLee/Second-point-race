@@ -119,8 +119,8 @@ def line_detection(frame):
                 rho2 = avg_center_x / a
                 rho3 = avg_center_y / b
                 rho_avg = (rho2 + rho3) / 2
-                uart.send_angle_message(theta)
-                uart.send_distance_message(rho_avg)
+                # uart.send_angle_message(theta)
+                # uart.send_distance_message(rho_avg)
 
                 # # 按照acfly的循线串口协议处理发送数据
                 # if theta > 90:
