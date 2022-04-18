@@ -18,6 +18,7 @@ def OpenPort(bps, timeout):
         return ser
     except Exception as e:
         print("===异常===\n", e)
+        return -1
 
 
 ser = OpenPort(115200, 1)
@@ -32,13 +33,15 @@ def sendData(ser, data):
 
 def send_angle_message(angle: int):
     data = bytearray([0x42])
-    print("[Notice] uart.py:"+str(angle))
-    ser.write(data)
-    ser.write(angle)
+    print("[Notice] uart.py:" + str(angle))
+    if ser != -1:
+        ser.write(data)
+        ser.write(angle)
 
 
 def send_distance_message(distance: int):
     data = bytearray([0x44])
     print("[Notice] uart.py:" + str(distance))
-    ser.write(data)
-    ser.write(distance)
+    if ser != -1:
+        ser.write(data)
+        ser.write(distance)

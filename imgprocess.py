@@ -10,22 +10,23 @@ import main
 
 center_width = 320
 center_height = 240
-angle_flag = 0
-circle_flag = 0
-color_flag = "null"
+
 font = cv2.FONT_HERSHEY_SIMPLEX
 lower_red = np.array([0, 150, 150])
-higher_red = np.array([10, 255, 255])
+higher_red = np.array([0, 0, 255])
 lower_green = np.array([35, 110, 106])  # 绿色阈值下界
 higher_green = np.array([77, 255, 255])  # 绿色阈值上界
 
-cap = cv2.VideoCapture(2)
+cap = cv2.VideoCapture(1)
+
+width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
 lineDataStack = stack.Stack()
 lineDataStack.push(0)
 
-# ser = uart.OpenPort()
 
+# ser = uart.OpenPort()
 
 
 # 蠢方法：阈值化找直线计算黑色区域像素中心点和镜头中心点的距离和偏移方向（太不优雅了）
@@ -47,7 +48,8 @@ def findLine(img):
 
 
 # detect circle and draw and recognize it's color
-def detect_circle(img):
+def detect_circle(img, color):
+    color_data = (255, 0, 0)
     circle_flag = 0
     # 转换为灰度图像
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -59,17 +61,22 @@ def detect_circle(img):
     gray = cv2.erode(gray, None, iterations=2)
     cv2.imshow("circle", gray)
     # 霍夫圆检测参数：输入圆的图像、检测模式、累加器分辨率与图片分辨率的反比、圆心检测的阈值、圆心检测的累加器阈值（数值越大圆越小），圆心检测的最小半径，圆心检测的最大半径
-    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 50, param1=50, param2=110, minRadius=20, maxRadius=150)
+    circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 50, param1=30, param2=90, minRadius=40, maxRadius=300)
     if circles is not None:
         circles = np.uint16(np.around(circles))
-        cv2.putText(img, "Find circle", (100, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 5)
         circle_flag = 1
         # ser.write("Find_circle".encode("utf-8"))
+        if color == 'red':
+            color_data = (0, 0, 255)
+        if color == 'green':
+            color_data = (0, 255, 0)
+        cv2.putText(img, "Find circle", (100, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, color_data, 3)
         for i in circles[0, :]:
             # draw the outer circle
-            cv2.circle(img, (i[0], i[1]), i[2], (0, 255, 0), 2)
+            cv2.circle(img, (i[0], i[1]), i[2], color_data, 2)
             # draw the center of the circle
-            cv2.circle(img, (i[0], i[1]), 2, (0, 255, 0), 3)
+            cv2.circle(img, (i[0], i[1]), 2, color_data, 3)
+    return circle_flag
 
 
 # 标准霍夫线变换
@@ -119,7 +126,7 @@ def line_detection(frame):
                 rho2 = avg_center_x / a
                 rho3 = avg_center_y / b
                 rho_avg = (rho2 + rho3) / 2
-                stream.distDataStack.push(rho_avg*0.1)
+                stream.distDataStack.push(rho_avg * 0.1)
                 stream.angleDataStack.push(theta)
                 # uart.send_angle_message(theta)
                 # uart.send_distance_message(rho_avg*0.1)
@@ -201,7 +208,7 @@ def line_detection(frame):
 
 
 def recognizeColor(frame):
-    color_flag = "null"
+    color_flag = None
     img_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     mask_red = cv2.inRange(img_hsv, lower_red, higher_red)  # 可以认为是过滤出红色部分，获得红色的掩膜,去掉背景
     mask_red = cv2.medianBlur(mask_red, 7)  # 中值滤波(把数字图像中的一点的值用该点的邻域各点的中值代替，让 周围像素值接近真实值，从而消除孤立的噪声点)
@@ -216,46 +223,59 @@ def recognizeColor(frame):
     # cnts2, hierarchy2 = cv2.findContours(mask_black, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     cnts3, hierarchy3 = cv2.findContours(mask_green, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
-    if cnts1 is not None:
-        color_flag = 'red'
+    max_area = 0
 
-    for cnt in cnts1:
-        (x, y, w, h) = cv2.boundingRect(cnt)  # 该函数返回矩阵四个点
-        cv2.rectangle(frame, (x, y - 20), (x + w, y + h), (0, 0, 255), 2)  # 将检测到的颜色框起来
-        cv2.putText(frame, 'red', (x, y - 20), font, 0.7, (0, 0, 255), 2)
+    for contour in cnts1:
+        area = cv2.contourArea(contour)
+        if area > max_area:
+            max_area = area
+            color_flag = 'red'
+    for contour in cnts3:
+        area = cv2.contourArea(contour)
+        if area > max_area:
+            max_area = area
+            color_flag = 'green'
 
-    # for cnt in cnts2:
+    # for cnt in cnts1:
     #     (x, y, w, h) = cv2.boundingRect(cnt)  # 该函数返回矩阵四个点
-    #     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 0), 2)  # 将检测到的颜色框起来
-    #     cv2.putText(frame, 'black', (x, y - 1), font, 0.7, (0, 0, 0), 2)
+    #     cv2.rectangle(frame, (x, y - 20), (x + w, y + h), (0, 0, 255), 2)  # 将检测到的颜色框起来
+    #     cv2.putText(frame, 'red', (x, y - 20), font, 0.7, (0, 0, 255), 2)
+    #
+    # # for cnt in cnts2:
+    # #     (x, y, w, h) = cv2.boundingRect(cnt)  # 该函数返回矩阵四个点
+    # #     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 0), 2)  # 将检测到的颜色框起来
+    # #     cv2.putText(frame, 'black', (x, y - 1), font, 0.7, (0, 0, 0), 2)
+    #
+    # for cnt in cnts3:
+    #     (x, y, w, h) = cv2.boundingRect(cnt)  # 该函数返回矩阵四个点
+    #     cv2.rectangle(frame, (x, y - 50), (x + w, y + h), (0, 255, 0), 2)  # 将检测到的颜色框起来
+    #     cv2.putText(frame, 'green', (x, y - 50), font, 0.7, (0, 255, 0), 2)
 
-    if cnts3 is not None:
-        color_flag = 'green'
-
-    for cnt in cnts3:
-        (x, y, w, h) = cv2.boundingRect(cnt)  # 该函数返回矩阵四个点
-        cv2.rectangle(frame, (x, y - 50), (x + w, y + h), (0, 255, 0), 2)  # 将检测到的颜色框起来
-        cv2.putText(frame, 'green', (x, y - 50), font, 0.7, (0, 255, 0), 2)
+    return color_flag
 
 
 def recognizeCircle(img):
-    recognizeColor(img)
-    detect_circle(img)
+    color_flag = recognizeColor(img)
+    circle_flag = detect_circle(img, color_flag)
+    # print(color_flag)
     if circle_flag == 1 and color_flag == "green":
-        print("laser")
+        print("[Notice] stream.py: find green circle")
         # ser.write(bytearray("check"))
     if circle_flag == 1 and color_flag == "red":
-        print("start point")
+        print("[Notice] stream.py:find red circle")
         # ser.write(bytearray("start"))
 
 
 def start():
     while 1:
         ret, frame = cap.read()
-        recognizeCircle(frame)
-        findLine(frame)
-        line_detection(frame)
-        cv2.imshow("image-lines", frame)
-        # line_detect_possible_demo(frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        if ret:
+            frame2 = frame[80:400, 300:500]
+            cv2.imshow("frame", frame2)
+            recognizeCircle(frame2)
+            # findLine(frame)
+            line_detection(frame2)
+            cv2.imshow("image-lines", frame2)
+            # line_detect_possible_demo(frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break

@@ -16,7 +16,7 @@ def lineData():
         # 暂停 0.5 秒后，再执行
         time.sleep(0.5)
         if distDataStack.isEmpty() is not True or angleDataStack.isEmpty() is not True:
-            print("lineDataStack is not empty")
+            # print("lineDataStack is not empty")
             # data = lineDataStack.pop()
             dist = distDataStack.pop()
             angle = angleDataStack.pop()
